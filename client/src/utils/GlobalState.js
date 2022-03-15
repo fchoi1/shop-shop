@@ -11,7 +11,9 @@ const StoreProvider = ({ value = [], ...props }) => {
   const [state, dispatch] = useProductReducer({
     products: [],
     categories: [],
-    currentCategory: ''
+    currentCategory: '',
+    cart: [],
+    cartOpen: true
   });
 
   console.log(state);
