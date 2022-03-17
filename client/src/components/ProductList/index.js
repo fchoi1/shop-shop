@@ -7,6 +7,7 @@ import spinner from '../../assets/spinner.gif';
 
 import { useStoreContext } from '../../utils/GlobalState';
 import { UPDATE_PRODUCTS } from '../../utils/actions';
+import { idbPromise } from '../../utils/helpers';
 
 function ProductList() {
   //get state
@@ -17,9 +18,21 @@ function ProductList() {
   // update state while waiting for query
   useEffect(() => {
     if (data) {
+      // update store global
       dispatch({ type: UPDATE_PRODUCTS, products: data.products });
+      // update idb stores
+      data.products.forEach((product) => {
+        idbPromise('products', 'put', product);
+      });
+
+      // add else if to check if `loading` is undefined in `useQuery()` Hook
+    } else if (!loading) {
+      // get data from idb store if offline and add to global
+      idbPromise('products', 'get').then((products) => {
+        dispatch({ type: UPDATE_PRODUCTS, products: products });
+      });
     }
-  }, [data, dispatch]);
+  }, [data, loading, dispatch]);
 
   function filterProducts() {
     if (!currentCategory) {

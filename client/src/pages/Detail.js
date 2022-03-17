@@ -13,6 +13,8 @@ import {
   ADD_TO_CART
 } from '../utils/actions';
 
+import { idbPromise } from '../utils/helpers';
+
 import Cart from '../components/Cart';
 
 function Detail() {
@@ -35,30 +37,50 @@ function Detail() {
         _id: id,
         purchaseQuantity: parseInt(itemInCart.purchaseQuantity) + 1
       });
+      // add indexed db
+      idbPromise('cart', 'put', {
+        ...itemInCart,
+        purchaseQuantity: parseInt(itemInCart.purchaseQuantity) + 1
+      });
     } else {
       dispatch({
         type: ADD_TO_CART,
         product: { ...currentProduct, purchaseQuantity: 1 }
+      });
+      // if item isn't in cart
+      idbPromise('cart', 'put', {
+        ...currentProduct,
+        purchaseQuantity: 1
       });
     }
   };
 
   const removeFromCart = () => {
     dispatch({ type: REMOVE_FROM_CART, _id: currentProduct._id });
+    idbPromise('cart', 'delete', { ...currentProduct });
   };
 
   useEffect(() => {
-    //if products exist find the id
+    //if products exist find the id, already in store
     if (products.length) {
       setCurrentProduct(products.find((product) => product._id === id));
-    } else {
+    } else if (data) {
       // update product list from query
       dispatch({
         type: UPDATE_PRODUCTS,
         products: data.products
       });
+      // add to local store
+      data.products.forEach((product) => {
+        idbPromise('products', 'put', product);
+      });
+    } else if (!loading) {
+      // get from idb if offline
+      idbPromise('products', 'get').then((indexedProducts) => {
+        dispatch({ type: UPDATE_PRODUCTS, products: indexedProducts });
+      });
     }
-  }, [products, id, data, dispatch]);
+  }, [products, id, loading, data, dispatch]);
 
   return (
     <>

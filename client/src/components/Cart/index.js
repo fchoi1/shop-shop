@@ -1,13 +1,28 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import CartItem from '../CartItem';
 import Auth from '../../utils/auth';
 import './style.css';
 
 import { useStoreContext } from '../../utils/GlobalState';
-import { TOGGLE_CART } from '../../utils/actions';
+import { ADD_MULTIPLE_TO_CART, TOGGLE_CART } from '../../utils/actions';
+
+import { idbPromise } from '../../utils/helpers';
 
 const Cart = () => {
   const [state, dispatch] = useStoreContext();
+
+  // store cart data in indexeddb
+  useEffect(() => {
+    async function getCart() {
+      // get cart to store into state
+      const cart = await idbPromise('cart', 'get');
+      dispatch({ type: ADD_MULTIPLE_TO_CART, products: [...cart] });
+    }
+    // if cart doesn't exist try to grab from indexde
+    if (!state.cart.length) {
+      getCart();
+    }
+  }, [state.cart.length, dispatch]);
 
   function toggleCart() {
     dispatch({ type: TOGGLE_CART });
@@ -43,7 +58,7 @@ const Cart = () => {
       {state.cart.length ? (
         <div>
           {state.cart.map((item) => (
-            <CartItem key={item.id} item={item} />
+            <CartItem key={item._id} item={item} />
           ))}
           <div className="flex-row space-between">
             <strong>Total: ${calculateTotal()}</strong>
